@@ -23,7 +23,7 @@ jobs:
       - name: Setup Java 8
         # https://github.com/actions/runner-images/blob/main/images/linux/Ubuntu2204-Readme.md#java
         # language=bash
-        run: ::set-env name=JAVA_HOME::$(echo $JAVA_HOME_8_X64)
+        run: echo ::set-env name=JAVA_HOME::$(echo $JAVA_HOME_8_X64)
 
       - name: Gradle build
         uses: gradle/gradle-build-action@v2
