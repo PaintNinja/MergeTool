@@ -13,7 +13,7 @@ plugins {
 group = 'net.minecraftforge'
 version = gradleutils.getTagOffsetVersion()
 println "Version: $version"
-println "Java: ${System.getProperty("java.version")}"
+println "Java version: ${System.getProperty("java.version")}"
 
 repositories {
     mavenCentral()
