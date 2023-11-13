@@ -1,4 +1,5 @@
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+import net.minecraftforge.gradleutils.PomUtils
 
 plugins {
     id 'java'
@@ -11,28 +12,18 @@ plugins {
 }
 
 group = 'net.minecraftforge'
-version = gradleutils.getTagOffsetVersion()
+version = gradleutils.tagOffsetVersion
 println "Version: $version"
 println "Java version: ${System.getProperty("java.version")}"
 
 repositories {
     mavenCentral()
-    maven {
-        name = 'MinecraftForge'
-        url = 'https://maven.minecraftforge.net'
-    }
+    maven gradleutils.forgeMaven
 }
 
 license {
     header = file('LICENSE-header.txt')
-    include 'net/minecraftforge/mergetool/**/*.java'
     newLine = false
-}
-
-sourceSets {
-    cpwFML
-    forgeFML
-    forgeAPI
 }
 
 java {
@@ -43,39 +34,24 @@ java {
 }
 
 tasks.named('jar', Jar).configure {
+    from(configurations.markers.collect { zipTree(it) } ) {
+        into 'markers'
+        include '**/*.class'
+        rename { it.replace('.class', '.marker') }
+    }
     manifest {
         attributes('Main-Class': 'net.minecraftforge.mergetool.ConsoleMerger')
         attributes('Implementation-Version': project.version)
     }
-    from sourceSets.cpwFML.output
-    from sourceSets.forgeFML.output
-    from sourceSets.forgeAPI.output
 }
 
 tasks.named('shadowJar', ShadowJar).configure {
     archiveClassifier = 'fatjar'
 }
 
-tasks.named('sourcesJar', Jar).configure {
-    from sourceSets.cpwFML.allSource
-    from sourceSets.forgeFML.allSource
-    from sourceSets.forgeAPI.allSource
-}
-
-tasks.register('cpwFML', Jar) {
-    archiveClassifier = 'cpw'
-    from sourceSets.cpwFML.output
-}
-
-tasks.register('forgeFML', Jar) {
-    archiveClassifier = 'forge'
-    from sourceSets.forgeFML.output
-}
-
-tasks.register('forgeAPI', Jar) {
-    manifest.attributes('Automatic-Module-Name': 'net.minecraftforge.mergetool.api')
-    archiveClassifier = 'api'
-    from sourceSets.forgeAPI.output
+configurations {
+    markers
+    implementation.extendsFrom(markers)
 }
 
 dependencies {
@@ -84,25 +60,19 @@ dependencies {
     implementation 'org.ow2.asm:asm-util:9.5'
     implementation 'net.sf.jopt-simple:jopt-simple:5.0.4'
     implementation 'net.minecraftforge:srgutils:0.4.15'
-
-    implementation sourceSets.cpwFML.output
-    implementation sourceSets.forgeFML.output
-    implementation sourceSets.forgeAPI.output
+    
+    markers 'net.minecraftforge:mergetool-cpw:1.0'
+    markers 'net.minecraftforge:mergetool-fml:1.0'
+    markers 'net.minecraftforge:mergetool-api:1.0'
 }
 
 artifacts {
     archives shadowJar
-    archives cpwFML
-    archives forgeFML
-    archives forgeAPI
 }
 
 publishing {
     publications.register('mavenJava', MavenPublication) {
         from components.java
-        artifact cpwFML
-        artifact forgeFML
-        artifact forgeAPI
 
         artifactId = 'mergetool'
 
@@ -110,31 +80,17 @@ publishing {
             name = 'MergeTool'
             description = 'Merges two jar files together, useful for rebuilding Retroguard stripped jars.'
             url = 'https://github.com/MinecraftForge/MergeTool'
-            scm {
-                url = 'https://github.com/MinecraftForge/MergeTool'
-                connection = 'scm:git:git://github.com/MinecraftForge/MergeTool.git'
-                developerConnection = 'scm:git:git@github.com:MinecraftForge/MergeTool.git'
-            }
-            issueManagement {
-                system = 'github'
-                url = 'https://github.com/MinecraftForge/MergeTool/issues'
-            }
+            
+            PomUtils.setGitHubDetails(pom, 'MergeTool')
 
-            licenses {
-                license {
-                    name = 'LGPLv2.1'
-                    url = 'https://www.gnu.org/licenses/old-licenses/lgpl-2.1.txt'
-                }
-            }
+            license PomUtils.Licenses.LGPLv2_1
 
             developers {
-                developer {
-                    id = 'LexManos'
-                    name = 'Lex Manos'
-                }
+                developer PomUtils.Developers.LexManos
             }
         }
     }
+    
     repositories {
         maven gradleutils.getPublishingForgeMaven()
     }
